@@ -6,7 +6,16 @@ services:
       - OPENAPI_OUTPUT_FILE=./shared-data/openapi.json
       - DATABASE_URL=postgresql+asyncpg://postgres:password@db:5432/mydatabase
       - TEST_DATABASE_URL=postgresql+asyncpg://postgres:password@db:5433/testdatabase
+      - REDIS_URL=redis://redis:6379/0
       - MAIL_SERVER=mailhog
+      - MAIL_PORT=1025
+      - MAIL_STARTTLS=False
+      - MAIL_SSL_TLS=False
+      - USE_CREDENTIALS=False
+      - ACCESS_SECRET_KEY=dev-access-secret-key-change-in-production
+      - RESET_PASSWORD_SECRET_KEY=dev-reset-password-secret-key-change-in-production
+      - VERIFICATION_SECRET_KEY=dev-verification-secret-key-change-in-production
+      - CORS_ORIGINS=["http://localhost:3000","http://frontend:3000"]
     ports:
       - "8000:8000"
     networks:
@@ -17,6 +26,7 @@ services:
       - ./local-shared-data:/app/shared-data
     depends_on:
       - db
+      - redis
   db:
     image: postgres:17
     environment:
@@ -40,6 +50,19 @@ services:
     networks:
       - my_network
     restart: always
+  redis:
+    image: redis:8
+    ports:
+      - "6379:6379"
+    networks:
+      - my_network
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 3
   frontend:
     build:
       context: ./nextjs-frontend
@@ -66,8 +89,10 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
   nextjs-node-modules:
   fastapi-venv:
+
 
 networks:
   my_network:
