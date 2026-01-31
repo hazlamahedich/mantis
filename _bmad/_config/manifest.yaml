@@ -1,0 +1,33 @@
+installation:
+  version: 6.0.0-Beta.4
+  installDate: 2026-01-31T08:05:31.162Z
+  lastUpdated: 2026-01-31T08:05:31.162Z
+modules:
+  - name: core
+    version: 6.0.0-Beta.4
+    installDate: 2026-01-31T08:05:30.640Z
+    lastUpdated: 2026-01-31T08:05:30.640Z
+    source: built-in
+    npmPackage: null
+    repoUrl: null
+  - name: bmm
+    version: 6.0.0-Beta.4
+    installDate: 2026-01-31T08:05:28.373Z
+    lastUpdated: 2026-01-31T08:05:30.640Z
+    source: built-in
+    npmPackage: null
+    repoUrl: null
+  - name: tea
+    version: 0.1.1-beta.3
+    installDate: 2026-01-31T08:05:30.610Z
+    lastUpdated: 2026-01-31T08:05:31.162Z
+    source: external
+    npmPackage: bmad-method-test-architecture-enterprise
+    repoUrl: https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
+ides:
+  - claude-code
+  - gemini
+  - antigravity
+  - opencode
+  - roo
+  - kilo
