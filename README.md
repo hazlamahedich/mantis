@@ -1,7 +1,7 @@
 # Mantis Bot 🦗
 
-[![CI](https://github.com/YOUR_USERNAME/mantis/workflows/CI/badge.svg)](https://github.com/YOUR_USERNAME/mantis/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/YOUR_USERNAME/mantis/branch/main/graph/badge.svg)](https://codecov.io/gh/YOUR_USERNAME/mantis)
+[![CI](https://github.com/hazlamahedich/mantis/workflows/CI/badge.svg)](https://github.com/hazlamahedich/mantis/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/hazlamahedich/mantis/branch/main/graph/badge.svg)](https://codecov.io/gh/hazlamahedich/mantis)
 
 A multi-tenant, AI-powered chatbot platform for managing automated conversations across Facebook and Instagram.
 
