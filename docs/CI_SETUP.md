@@ -2,28 +2,25 @@
 
 This guide covers setting up Codecov and configuring branch protection for the Mantis Bot project.
 
-## Codecov Setup
+## ✅ Codecov Setup (Already Configured)
 
-### Step 1: Sign up for Codecov
+The Codecov token has been added to GitHub Secrets:
+- Secret Name: `CODECOV_TOKEN`
+- Status: ✅ Active
+
+Coverage reports will be automatically uploaded to Codecov on every CI run.
+
+### Manual Setup (Reference Only)
+
+If you need to reconfigure Codecov in the future:
 
 1. Go to [https://codecov.io](https://codecov.io)
-2. Click "Sign Up" and sign in with your GitHub account
-3. Authorize Codecov to access your GitHub repositories
-
-### Step 2: Add the Repository
-
-1. After signing in, click "Add New Repository"
-2. Find and select `mantis` (or your repository name)
-3. Click "Setup" to get your upload token
-
-### Step 3: Add Codecov Token to GitHub Secrets
-
-1. Go to your GitHub repository
-2. Navigate to **Settings → Secrets and variables → Actions**
-3. Click "New repository secret"
-4. Name: `CODECOV_TOKEN`
-5. Value: Paste the token from Codecov (looks like a long UUID)
-6. Click "Add secret"
+2. Sign in with your GitHub account
+3. Add the `mantis` repository
+4. Get the upload token from repository settings
+5. Add to GitHub: **Settings → Secrets and variables → Actions → New repository secret**
+   - Name: `CODECOV_TOKEN`
+   - Value: Paste the token from Codecov
 
 ### Step 4: Update README.md Badges
 
@@ -36,43 +33,42 @@ Replace `YOUR_USERNAME` in the README.md badges with your actual GitHub username
 
 ## Branch Protection Setup
 
-### Step 1: Access Repository Settings
+**⚠️ Important**: Branch protection rules require **GitHub Pro/Team** for private repositories or a **public repository**. Free GitHub accounts cannot configure branch protection on private repos.
+
+### For Free GitHub Accounts (Private Repository)
+
+You have two options:
+
+**Option 1 - Make repository public:**
+1. Go to **Settings → General → Danger Zone**
+2. Click **Change visibility** → Make public
+3. Then follow the branch protection steps below
+
+**Option 2 - Manual status check verification:**
+1. Always create pull requests for changes
+2. Wait for all CI checks to pass (green checkmarks)
+3. Review the code changes thoroughly
+4. Merge only when all 4 checks pass:
+   - ✅ Lint Backend (Ruff)
+   - ✅ Lint Frontend
+   - ✅ Test Backend
+   - ✅ Test Frontend
+
+### For GitHub Pro/Team or Public Repositories
 
 1. Go to your GitHub repository
 2. Click **Settings → Branches**
-
-### Step 2: Add Branch Protection Rule
-
-1. Click "Add rule" or "Edit" if `main` already exists
-2. Branch name pattern: `main`
-
-### Step 3: Configure Required Status Checks
-
-Under "Protect matching branches", enable:
-- ✅ **Require a pull request before merging**
-  - ✅ **Require approvals** (optional - set number of reviewers)
-  - ✅ **Require status checks to pass before merging**
-  - ✅ **Require branches to be up to date before merging**
-
-### Step 4: Select Required Checks
-
-Search for and select these status checks:
-- ✅ `Lint Backend (Ruff)`
-- ✅ `Lint Frontend (ESLint/Prettier/TypeScript)`
-- ✅ `Test Backend (pytest)`
-- ✅ `Test Frontend (Jest)`
-
-**Note:** Do NOT select `E2E Tests (Playwright)` as it's marked optional with `continue-on-error: true`.
-
-### Step 5: Additional Restrictions (Optional)
-
-- ✅ **Require signed commits** (if using GPG signing)
-- ✅ **Require linear history** (prevents merge commits, requires rebase)
-- ✅ **Include administrators** (enforces rules on repo admins too)
-
-### Step 6: Save Changes
-
-Click "Create" or "Save changes" to apply the branch protection rule.
+3. Click "Add rule"
+4. Branch name pattern: `master` (or `main`)
+5. Configure:
+   - ✅ **Require status checks to pass before merging**
+   - ✅ **Require branches to be up to date before merging**
+6. Select these required checks:
+   - ✅ `Lint Backend (Ruff)`
+   - ✅ `Lint Frontend`
+   - ✅ `Test Backend`
+   - ✅ `Test Frontend`
+7. Click "Create"
 
 ## Verification
 
