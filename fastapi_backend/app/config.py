@@ -38,13 +38,14 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:3000"
 
     # CORS
-    CORS_ORIGINS: Set[str] = {"http://localhost:3000", "http://localhost:8000"}
+    CORS_ORIGINS: Set[str] | None = None
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
     def parse_cors_origins(cls, v):
+        if v is None:
+            return {"http://localhost:3000", "http://localhost:8000"}
         if isinstance(v, str):
-            # Handle comma-separated string
             return {origin.strip() for origin in v.split(",") if origin.strip()}
         return v
 
