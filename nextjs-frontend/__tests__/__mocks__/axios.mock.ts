@@ -17,18 +17,22 @@
  * ```
  */
 
-import { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { AxiosError, InternalAxiosRequestConfig, AxiosResponse } from "axios";
 
 /**
  * Create a mock Axios response
  */
-export function mockAxiosResponse<T = any>(data: T, status = 200, statusText = 'OK'): AxiosResponse<T> {
+export function mockAxiosResponse<T = unknown>(
+  data: T,
+  status = 200,
+  statusText = "OK",
+): AxiosResponse<T> {
   return {
     data,
     status,
     statusText,
     headers: {},
-    config: {} as AxiosRequestConfig,
+    config: {} as InternalAxiosRequestConfig,
   };
 }
 
@@ -37,8 +41,8 @@ export function mockAxiosResponse<T = any>(data: T, status = 200, statusText = '
  */
 export function mockAxiosError(
   status = 500,
-  message = 'Internal Server Error',
-  code?: string
+  message = "Internal Server Error",
+  code?: string,
 ): AxiosError {
   const error = new AxiosError(message);
   error.status = status;

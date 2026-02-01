@@ -2,8 +2,6 @@ from httpx import AsyncClient, ASGITransport
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from fastapi_users.db import SQLAlchemyUserDatabase
-from fastapi_users.password import PasswordHelper
-import uuid
 
 from app.config import settings
 from app.models import User, Base
@@ -100,5 +98,4 @@ async def authenticated_user(test_client, db_session):
     return {
         "headers": {"Authorization": f"Bearer {access_token}"},
         "user": user,
-        "user_data": {"email": user_data["email"], "password": "TestPassword123#"},
     }

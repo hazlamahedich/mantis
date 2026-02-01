@@ -15,8 +15,9 @@
  * ```
  */
 
-import { ReactElement } from 'react';
-import { render, RenderOptions } from '@testing-library/react';
+import { ReactElement } from "react";
+import type { RenderOptions } from "@testing-library/react";
+import * as RTL from "@testing-library/react";
 
 /**
  * Custom render function that wraps components with providers
@@ -25,7 +26,7 @@ import { render, RenderOptions } from '@testing-library/react';
  */
 export function renderWithProviders(
   ui: ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'>
+  options?: Omit<RenderOptions, "wrapper">,
 ) {
   function AllTheProviders({ children }: { children: React.ReactNode }) {
     // Add providers here as your application grows
@@ -40,20 +41,15 @@ export function renderWithProviders(
     return <>{children}</>;
   }
 
-  return render(ui, { wrapper: AllTheProviders, ...options });
+  return RTL.render(ui, { wrapper: AllTheProviders, ...options });
 }
 
 /**
  * Re-export everything from React Testing Library
  */
-export * from '@testing-library/react';
+export * from "@testing-library/react";
 
 /**
  * Re-export screen for convenience
  */
-export { screen } from '@testing-library/react';
-
-/**
- * Default render function (alias for renderWithProviders)
- */
-export const render = renderWithProviders;
+export { screen } from "@testing-library/react";

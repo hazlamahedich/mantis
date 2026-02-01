@@ -1,5 +1,8 @@
 # Mantis Bot 🦗
 
+[![CI](https://github.com/YOUR_USERNAME/mantis/workflows/CI/badge.svg)](https://github.com/YOUR_USERNAME/mantis/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/YOUR_USERNAME/mantis/branch/main/graph/badge.svg)](https://codecov.io/gh/YOUR_USERNAME/mantis)
+
 A multi-tenant, AI-powered chatbot platform for managing automated conversations across Facebook and Instagram.
 
 ## 🚀 Quick Start
@@ -59,6 +62,33 @@ Environment variables are currently managed in `docker-compose.yml` for developm
 | `ACCESS_SECRET_KEY` | JWT signing key | `dev-access-secret...` |
 
 **Security Note:** For production, use a `.env` file and never commit secrets to version control.
+
+## 🔄 CI/CD Pipeline
+
+This project uses GitHub Actions for continuous integration with quality gates.
+
+### Quality Gates
+
+- **Backend**: Ruff linting, formatting checks, and pytest with 80% coverage threshold
+- **Frontend**: ESLint, Prettier, TypeScript checks, and Jest with 80% coverage threshold
+- **E2E**: Playwright tests (optional, doesn't block pipeline)
+
+### Branch Protection
+
+For production deployments, configure branch protection rules on GitHub:
+
+1. Go to **Settings → Branches**
+2. Add rule for `main` branch:
+   - ✅ Require status checks to pass before merging
+   - ✅ Require branches to be up to date before merging
+   - Select required checks: `Lint Backend`, `Lint Frontend`, `Test Backend`, `Test Frontend`
+
+### Coverage Reports
+
+Coverage reports are automatically uploaded to Codecov. To enable:
+
+1. Go to [Codecov](https://codecov.io/) and sign in with GitHub
+2. Add `CODECOV_TOKEN` to repository secrets (Settings → Secrets and variables → Actions)
 
 ## ❓ Troubleshooting
 

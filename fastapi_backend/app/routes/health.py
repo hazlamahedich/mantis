@@ -26,7 +26,7 @@ async def check_redis() -> str:
     """Check Redis connectivity using connection pool."""
     try:
         from redis.asyncio import Redis
-        
+
         # Redis client manages its own connection pool internally
         client = Redis.from_url(settings.REDIS_URL, decode_responses=True)
         try:
@@ -42,17 +42,17 @@ async def check_redis() -> str:
 async def health_check() -> dict[str, Any]:
     """
     Health check endpoint for infrastructure services.
-    
+
     Returns status of PostgreSQL and Redis connectivity.
     Returns 200 if all services are healthy.
     """
     postgres_status = await check_postgres()
     redis_status = await check_redis()
-    
+
     overall_status = "healthy"
     if postgres_status != "ok" or redis_status != "ok":
         overall_status = "unhealthy"
-    
+
     return {
         "status": overall_status,
         "postgres": postgres_status,
@@ -71,14 +71,14 @@ async def readiness() -> dict[str, Any]:
     """Readiness probe - only returns 200 if dependencies are ready."""
     postgres_status = await check_postgres()
     redis_status = await check_redis()
-    
+
     if postgres_status != "ok" or redis_status != "ok":
         return {
             "status": "not_ready",
             "postgres": postgres_status,
             "redis": redis_status,
         }
-    
+
     return {
         "status": "ready",
         "postgres": postgres_status,

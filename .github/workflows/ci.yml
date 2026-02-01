@@ -1,0 +1,329 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+
+# Cancel outdated runs for the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Backend Linting Job
+  lint-backend:
+    name: Lint Backend (Ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        working-directory: ./fastapi_backend
+        run: |
+          uv sync --group dev
+
+      - name: Run Ruff linter
+        working-directory: ./fastapi_backend
+        run: uv run ruff check .
+
+      - name: Run Ruff formatter check
+        working-directory: ./fastapi_backend
+        run: uv run ruff format --check .
+
+  # Frontend Linting Job
+  lint-frontend:
+    name: Lint Frontend (ESLint/Prettier/TypeScript)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.7.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: './nextjs-frontend/pnpm-lock.yaml'
+
+      - name: Install dependencies
+        working-directory: ./nextjs-frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ESLint
+        working-directory: ./nextjs-frontend
+        run: pnpm lint
+
+      - name: Run Prettier check
+        working-directory: ./nextjs-frontend
+        run: pnpm prettier --check '**/*.{js,jsx,ts,tsx,json,css,html}'
+
+      - name: Run TypeScript check
+        working-directory: ./nextjs-frontend
+        run: pnpm tsc --noEmit
+
+  # Backend Testing Job
+  test-backend:
+    name: Test Backend (pytest)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: testdatabase
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        volumes:
+          - postgres_test_data:/var/lib/postgresql/data
+
+      redis:
+        image: redis:8
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+        volumes:
+          - redis_test_data:/data
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/testdatabase
+      TEST_DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/testdatabase
+      REDIS_URL: redis://localhost:6379/0
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        working-directory: ./fastapi_backend
+        run: |
+          uv sync --group dev
+
+      - name: Run pytest with coverage
+        working-directory: ./fastapi_backend
+        run: |
+          uv run pytest --cov \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            --cov-report=html \
+            --junitxml=reports/junit.xml \
+            --cov-fail-under=80
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./fastapi_backend/coverage.xml
+          flags: backend
+          name: backend-coverage
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload coverage reports as artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage-report
+          path: |
+            ./fastapi_backend/htmlcov/
+            ./fastapi_backend/coverage.xml
+            ./fastapi_backend/reports/
+          retention-days: 7
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-results
+          path: ./fastapi_backend/reports/
+          retention-days: 7
+
+      - name: Publish Test Report
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: ./fastapi_backend/reports/junit.xml
+          check_name: Backend Test Results
+
+    volumes:
+      postgres_test_data:
+        driver: local
+      redis_test_data:
+        driver: local
+
+  # Frontend Testing Job
+  test-frontend:
+    name: Test Frontend (Jest)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.7.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: './nextjs-frontend/pnpm-lock.yaml'
+
+      - name: Install dependencies
+        working-directory: ./nextjs-frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Jest tests with coverage
+        working-directory: ./nextjs-frontend
+        run: pnpm test --coverage --maxWorkers=2
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./nextjs-frontend/coverage/coverage-final.json
+          flags: frontend
+          name: frontend-coverage
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload coverage reports as artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage-report
+          path: ./nextjs-frontend/coverage/
+          retention-days: 7
+
+  # E2E Testing Job (Optional)
+  test-e2e:
+    name: E2E Tests (Playwright)
+    runs-on: ubuntu-latest
+    # Allow this job to not block the pipeline if it fails
+    continue-on-error: true
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: testdatabase
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:8
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/testdatabase
+      TEST_DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/testdatabase
+      REDIS_URL: redis://localhost:6379/0
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.7.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: './nextjs-frontend/pnpm-lock.yaml'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install backend dependencies
+        working-directory: ./fastapi_backend
+        run: uv sync --group dev
+
+      - name: Install frontend dependencies
+        working-directory: ./nextjs-frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        working-directory: ./nextjs-frontend
+        run: pnpm exec playwright install --with-deps
+
+      - name: Install Playwright browsers for e2e
+        working-directory: ./e2e
+        run: pnpm exec playwright install --with-deps
+
+      - name: Run Playwright tests
+        working-directory: ./e2e
+        run: pnpm exec playwright test
+        env:
+          CI: true
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: ./e2e/playwright-report/
+          retention-days: 7
+
+      - name: Upload Playwright screenshots
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-screenshots
+          path: ./e2e/test-results/
+          retention-days: 7

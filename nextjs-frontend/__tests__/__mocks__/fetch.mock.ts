@@ -26,10 +26,10 @@ export interface MockFetchResponseInit {
  * Create a mock fetch Response object
  */
 export function mockFetchResponse(
-  data: any,
-  init: MockFetchResponseInit = {}
+  data: unknown,
+  init: MockFetchResponseInit = {},
 ): Response {
-  const { status = 200, statusText = 'OK', headers = {} } = init;
+  const { status = 200, statusText = "OK", headers = {} } = init;
 
   return {
     ok: status >= 200 && status < 300,
@@ -39,7 +39,8 @@ export function mockFetchResponse(
     json: async () => data,
     text: async () => JSON.stringify(data),
     blob: async () => new Blob([JSON.stringify(data)]),
-    arrayBuffer: async () => new TextEncoder().encode(JSON.stringify(data)).buffer,
+    arrayBuffer: async () =>
+      new TextEncoder().encode(JSON.stringify(data)).buffer,
     clone: () => mockFetchResponse(data, init),
     body: null,
     bodyUsed: false,
@@ -51,10 +52,10 @@ export function mockFetchResponse(
  */
 export function mockFetchError(
   status = 500,
-  message = 'Internal Server Error'
-): Error {
-  const error = new Error(message);
-  (error as any).status = status;
+  message = "Internal Server Error",
+): Error & { status?: number } {
+  const error = new Error(message) as Error & { status?: number };
+  error.status = status;
   return error;
 }
 
@@ -62,9 +63,7 @@ export function mockFetchError(
  * Reset fetch mock
  */
 export function resetFetchMock(): void {
-  if (global.fetch) {
-    jest.clearAllMocks();
-  }
+  jest.clearAllMocks();
 }
 
 /**
@@ -74,4 +73,9 @@ export function setupFetchMock(): void {
   global.fetch = jest.fn();
 }
 
-export default { mockFetchResponse, mockFetchError, resetFetchMock, setupFetchMock };
+export default {
+  mockFetchResponse,
+  mockFetchError,
+  resetFetchMock,
+  setupFetchMock,
+};

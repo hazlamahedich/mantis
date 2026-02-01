@@ -39,8 +39,7 @@ class AsyncUserFactory:
             "id": uuid.uuid4(),
             "email": kwargs.get("email", self.faker.email()),
             "hashed_password": kwargs.get(
-                "hashed_password",
-                self.password_helper.hash("TestPassword123#")
+                "hashed_password", self.password_helper.hash("TestPassword123#")
             ),
             "is_active": kwargs.get("is_active", True),
             "is_superuser": kwargs.get("is_superuser", False),
