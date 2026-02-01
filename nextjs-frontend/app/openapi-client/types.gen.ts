@@ -757,16 +757,10 @@ export type HealthCheckData = {
 
 export type HealthCheckResponses = {
   /**
-   * Response Health-Health Check
    * Successful Response
    */
-  200: {
-    [key: string]: unknown;
-  };
+  200: unknown;
 };
-
-export type HealthCheckResponse =
-  HealthCheckResponses[keyof HealthCheckResponses];
 
 export type LivenessData = {
   body?: never;
@@ -796,15 +790,10 @@ export type ReadinessData = {
 
 export type ReadinessResponses = {
   /**
-   * Response Health-Readiness
    * Successful Response
    */
-  200: {
-    [key: string]: unknown;
-  };
+  200: unknown;
 };
-
-export type ReadinessResponse = ReadinessResponses[keyof ReadinessResponses];
 
 export type ClientOptions = {
   baseURL: `${string}://${string}` | (string & {});

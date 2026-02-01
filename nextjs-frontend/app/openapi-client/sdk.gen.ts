@@ -427,8 +427,8 @@ export const deleteItem = <ThrowOnError extends boolean = false>(
  * Health Check
  * Health check endpoint for infrastructure services.
  *
- * Returns status of PostgreSQL and Redis connectivity.
- * Returns 200 if all services are healthy.
+ * Returns status of PostgreSQL, Redis, and Keycloak connectivity.
+ * Returns 200 if all services are healthy, 503 otherwise.
  */
 export const healthCheck = <ThrowOnError extends boolean = false>(
   options?: Options<HealthCheckData, ThrowOnError>,

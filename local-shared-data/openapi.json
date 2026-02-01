@@ -836,17 +836,14 @@
           "health"
         ],
         "summary": "Health Check",
-        "description": "Health check endpoint for infrastructure services.\n\nReturns status of PostgreSQL and Redis connectivity.\nReturns 200 if all services are healthy.",
+        "description": "Health check endpoint for infrastructure services.\n\nReturns status of PostgreSQL, Redis, and Keycloak connectivity.\nReturns 200 if all services are healthy, 503 otherwise.",
         "operationId": "health_check",
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "object",
-                  "title": "Response Health-Health Check"
-                }
+                "schema": {}
               }
             }
           }
@@ -892,10 +889,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "object",
-                  "title": "Response Health-Readiness"
-                }
+                "schema": {}
               }
             }
           }

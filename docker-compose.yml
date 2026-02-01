@@ -4,9 +4,9 @@ services:
       context: fastapi_backend
     environment:
       - OPENAPI_OUTPUT_FILE=./shared-data/openapi.json
-      - DATABASE_URL=${DATABASE_URL}
-      - TEST_DATABASE_URL=${TEST_DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
+      - DATABASE_URL=postgresql+asyncpg://postgres:password@db:5432/mydatabase
+      - TEST_DATABASE_URL=postgresql+asyncpg://postgres:password@db_test:5432/testdatabase
+      - REDIS_URL=redis://redis:6379/0
       - MAIL_SERVER=${MAIL_SERVER}
       - MAIL_PORT=${MAIL_PORT}
       - MAIL_STARTTLS=${MAIL_STARTTLS}
@@ -16,6 +16,14 @@ services:
       - RESET_PASSWORD_SECRET_KEY=${RESET_PASSWORD_SECRET_KEY}
       - VERIFICATION_SECRET_KEY=${VERIFICATION_SECRET_KEY}
       - CORS_ORIGINS=${CORS_ORIGINS}
+      - KEYCLOAK_INTERNAL_URL=http://keycloak:8080
+      - KEYCLOAK_URL=http://localhost:8081
+      - KEYCLOAK_REALM=mantis
+      - KEYCLOAK_CLIENT_ID=mantis-backend
+      - KEYCLOAK_CLIENT_SECRET=backend-secret-change-in-prod
+      - LOG_LEVEL=INFO
+      - APP_VERSION=0.0.1
+      - COMMIT_SHA=dev
     ports:
       - "8000:8000"
     networks:
@@ -39,6 +47,12 @@ services:
       - my_network
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   db_test:
     image: postgres:17
     environment:
@@ -86,6 +100,33 @@ services:
       - "8025:8025" # Web UI
     networks:
       - my_network
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: start-dev --import-realm
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://db:5432/keycloak
+      KC_DB_USERNAME: postgres
+      KC_DB_PASSWORD: password
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8081:8080"
+    networks:
+      - my_network
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "kcadm.sh", "config", "credentials", "--server", "http://localhost:8080" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 volumes:
   postgres_data:

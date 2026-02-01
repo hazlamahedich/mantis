@@ -36,16 +36,16 @@ story_location: _bmad-output/stories
 
 development_status:
   # Epic 0: Foundation & Quality Infrastructure
-  epic-0: in-progress
+  epic-0: done
   0-1-project-skeleton-docker-environment: done
   0-2-test-framework-setup: done
-  0-3-ci-cd-pipeline-with-quality-gates: review
-  0-4-observability-health-monitoring: backlog
-  epic-0-retrospective: optional
+  0-3-ci-cd-pipeline-with-quality-gates: done
+  0-4-observability-health-monitoring: done
+  epic-0-retrospective: done
 
   # Epic 1: Authentication & Tenant Foundation
-  epic-1: backlog
-  1-1-database-keycloak-setup: backlog
+  epic-1: in-progress
+  1-1-database-keycloak-setup: done
   1-2-user-authentication-frontend-backend: backlog
   1-3-multi-tenancy-row-level-security: backlog
   epic-1-retrospective: optional
@@ -86,3 +86,9 @@ development_status:
   5-3-token-meter-brain-capacity: backlog
   5-4-prune-history: backlog
   epic-5-retrospective: optional
+
+  # Technical Debt Backlog (from Epic 0 Retrospective)
+  # Priority: do-before-epic-2, deferred
+  tech-debt-e2e-ci-integration: do-before-epic-2  # Add Playwright E2E tests to CI pipeline
+  tech-debt-sentry-integration: deferred           # Error tracking with Sentry
+  tech-debt-grafana-dashboard: deferred            # Prometheus metrics visualization

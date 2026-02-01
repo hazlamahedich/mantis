@@ -97,7 +97,7 @@ jobs:
       - working-directory: ./fastapi_backend
         run: mkdir -p reports
       - working-directory: ./fastapi_backend
-        run: uv run pytest --cov --cov-report=xml --junitxml=reports/junit.xml --cov-fail-under=80 || true
+        run: uv run pytest --cov --cov-report=xml --junitxml=reports/junit.xml --cov-fail-under=80
       - uses: codecov/codecov-action@v4
         if: always()
         with:
@@ -122,7 +122,7 @@ jobs:
       - working-directory: ./nextjs-frontend
         run: pnpm install
       - working-directory: ./nextjs-frontend
-        run: pnpm test --coverage --maxWorkers=2 || true
+        run: pnpm test --coverage --maxWorkers=2
       - uses: codecov/codecov-action@v4
         if: always()
         with:

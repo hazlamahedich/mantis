@@ -4,7 +4,8 @@ FROM python:3.12-bookworm
 WORKDIR /app
 
 # The uv installer requires curl (and certificates) to download the release archive
-RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates
+# Also install netcat for postgres healthcheck
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates netcat-openbsd && rm -rf /var/lib/apt/lists/*
 
 # Download the latest uv installer
 ADD https://astral.sh/uv/install.sh /uv-installer.sh
