@@ -7,7 +7,7 @@ user authentication for protected routes.
 
 from typing import Annotated
 
-from fastapi import Cookie, Depends, Header
+from fastapi import Cookie, Depends, Header, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user as _get_current_user
@@ -50,12 +50,15 @@ TokenDep = Annotated[str | None, Depends(get_token)]
 async def get_current_user(
     session: SessionDep,
     token: TokenDep,
+    request: Request,
 ) -> User:
     """
     FastAPI dependency for required authentication.
 
     Use this dependency in protected routes to ensure the user
     is authenticated. Raises 401 if authentication fails.
+
+    Also sets the user in request.state for tenant middleware to access.
 
     Example:
         ```python
@@ -64,18 +67,24 @@ async def get_current_user(
             return {"message": f"Hello, {user.email}"}
         ```
     """
-    return await _get_current_user(token or "", session)
+    user = await _get_current_user(token or "", session)
+    # Set user in request state for tenant middleware
+    request.state.user = user
+    return user
 
 
 async def get_current_user_optional(
     session: SessionDep,
     token: TokenDep,
+    request: Request,
 ) -> User | None:
     """
     FastAPI dependency for optional authentication.
 
     Use this dependency in routes that work for both authenticated
     and anonymous users. Returns None if not authenticated.
+
+    Also sets the user in request.state for tenant middleware to access.
 
     Example:
         ```python
@@ -86,4 +95,8 @@ async def get_current_user_optional(
             return {"message": "Hello, anonymous"}
         ```
     """
-    return await _get_current_user_optional(token, session)
+    user = await _get_current_user_optional(token, session)
+    # Set user in request state for tenant middleware (may be None)
+    request.state.user = user
+    return user
+

@@ -30,6 +30,22 @@
               ],
               "title": "Authorization"
             }
+          },
+          {
+            "name": "auth_access_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Auth Access Token"
+            }
           }
         ],
         "responses": {
@@ -80,6 +96,22 @@
               ],
               "title": "Authorization"
             }
+          },
+          {
+            "name": "auth_access_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Auth Access Token"
+            }
           }
         ],
         "responses": {
@@ -129,6 +161,22 @@
                 }
               ],
               "title": "Authorization"
+            }
+          },
+          {
+            "name": "auth_access_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Auth Access Token"
             }
           }
         ],
@@ -183,6 +231,22 @@
                 }
               ],
               "title": "Authorization"
+            }
+          },
+          {
+            "name": "auth_access_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Auth Access Token"
             }
           }
         ],
@@ -286,6 +350,22 @@
               ],
               "title": "Authorization"
             }
+          },
+          {
+            "name": "auth_access_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Auth Access Token"
+            }
           }
         ],
         "responses": {
@@ -332,6 +412,22 @@
                 }
               ],
               "title": "Authorization"
+            }
+          },
+          {
+            "name": "auth_access_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Auth Access Token"
             }
           }
         ],
@@ -401,6 +497,22 @@
                 }
               ],
               "title": "Authorization"
+            }
+          },
+          {
+            "name": "auth_access_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Auth Access Token"
             }
           }
         ],
@@ -586,13 +698,19 @@
             "type": "string",
             "format": "uuid",
             "title": "User Id"
+          },
+          "tenant_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Tenant Id"
           }
         },
         "type": "object",
         "required": [
           "name",
           "id",
-          "user_id"
+          "user_id",
+          "tenant_id"
         ],
         "title": "ItemRead"
       },

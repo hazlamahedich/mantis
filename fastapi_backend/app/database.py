@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from .config import settings
 from .models import Base, User
+from .core.tenant import TenantSession, get_tenant_id
 
 
 parsed_db_url = urlparse(settings.DATABASE_URL)
@@ -21,8 +22,12 @@ async_db_connection_url = (
 # Disable connection pooling for serverless environments like Vercel
 engine = create_async_engine(async_db_connection_url, poolclass=NullPool)
 
+# Create sessionmaker with TenantSession as the class
+# We bind TenantSession to the engine directly
 async_session_maker = async_sessionmaker(
-    engine, expire_on_commit=settings.EXPIRE_ON_COMMIT
+    bind=engine,
+    class_=TenantSession,
+    expire_on_commit=settings.EXPIRE_ON_COMMIT,
 )
 
 
@@ -32,6 +37,13 @@ async def create_db_and_tables():
 
 
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
+    """
+    Get a database session with tenant context for RLS.
+
+    This creates a TenantSession that automatically sets the
+    app.current_tenant configuration parameter based on the
+    current tenant context variable.
+    """
     async with async_session_maker() as session:
         yield session
 

@@ -35,7 +35,7 @@ async def create_item(
     session: SessionDep,
     user: User = Depends(get_current_user),
 ) -> ItemRead:
-    db_item = Item(**item.model_dump(), user_id=user.id)
+    db_item = Item(**item.model_dump(), user_id=user.id, tenant_id=user.tenant_id)
     session.add(db_item)
     await session.commit()
     await session.refresh(db_item)

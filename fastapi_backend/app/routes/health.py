@@ -10,6 +10,7 @@ from sqlalchemy import text
 
 from app.database import get_async_session
 from app.config import settings
+from app.core.tenant import sudo_context
 
 router = APIRouter(tags=["health"])
 
@@ -25,12 +26,19 @@ MAX_ERROR_LENGTH = 200
 
 
 async def check_postgres() -> str:
-    """Check PostgreSQL connectivity."""
+    """
+    Check PostgreSQL connectivity.
+
+    Uses sudo_context to bypass RLS for health checks, ensuring
+    connectivity can be verified regardless of tenant context.
+    """
     try:
-        async for session in get_async_session():
-            result = await session.execute(text("SELECT 1"))
-            result.fetchone()
-            return "ok"
+        # Use sudo context to bypass RLS for health checks
+        async with sudo_context():
+            async for session in get_async_session():
+                result = await session.execute(text("SELECT 1"))
+                result.fetchone()
+                return "ok"
     except Exception as e:
         error_msg = f"error: {str(e)}"
         logger.warning(f"PostgreSQL health check failed: {error_msg}")

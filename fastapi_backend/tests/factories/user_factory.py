@@ -9,7 +9,7 @@ async factory approach rather than factory-boy's SQLAlchemyModelFactory.
 
 import uuid
 from faker import Faker
-from app.models import User
+from app.models import User, Tenant
 from fastapi_users.password import PasswordHelper
 
 
@@ -35,8 +35,30 @@ class AsyncUserFactory:
         Returns:
             User: Created user instance
         """
+        # Create or get a default tenant for testing
+        tenant_id = kwargs.get("tenant_id")
+        if tenant_id is None:
+            # Try to find an existing tenant
+            from sqlalchemy import select
+
+            result = await self.session.execute(select(Tenant).limit(1))
+            tenant = result.scalar_one_or_none()
+
+            if tenant:
+                tenant_id = tenant.id
+            else:
+                # Create a default tenant
+                tenant_id = uuid.uuid4()
+                tenant = Tenant(
+                    id=tenant_id,
+                    name="Test Tenant",
+                    slug="test-tenant"
+                )
+                self.session.add(tenant)
+                await self.session.commit()
+
         user_data = {
-            "id": uuid.uuid4(),
+            "id": kwargs.get("id", uuid.uuid4()),
             "email": kwargs.get("email", self.faker.email()),
             "hashed_password": kwargs.get(
                 "hashed_password", self.password_helper.hash("TestPassword123#")
@@ -44,6 +66,7 @@ class AsyncUserFactory:
             "is_active": kwargs.get("is_active", True),
             "is_superuser": kwargs.get("is_superuser", False),
             "is_verified": kwargs.get("is_verified", True),
+            "tenant_id": tenant_id,
         }
 
         user = User(**user_data)

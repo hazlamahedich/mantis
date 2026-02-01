@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 from app.core.deps import SessionDep, get_current_user
 from app.core.logging import get_logger
+from app.core.tenant import sudo_context
 from app.models import User
 
 logger = get_logger(__name__)

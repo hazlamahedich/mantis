@@ -20,10 +20,57 @@ _TEST_JWT_SECRET = "test-secret-for-jwt-tokens"
 @pytest_asyncio.fixture(scope="function")
 async def engine():
     """Create a fresh test database engine for each test function."""
+    from sqlalchemy import text
+
     engine = create_async_engine(settings.TEST_DATABASE_URL, echo=False)
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+        # Enable RLS on tables after creation
+        def enable_rls(connection):
+            connection.execute(text('ALTER TABLE items ENABLE ROW LEVEL SECURITY'))
+            connection.execute(text('ALTER TABLE "user" ENABLE ROW LEVEL SECURITY'))
+
+            # Create RLS policies
+            connection.execute(text("""
+                CREATE POLICY tenant_isolation_policy ON items
+                FOR ALL
+                USING (
+                    current_setting('app.current_tenant', true) ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+                    AND tenant_id = current_setting('app.current_tenant', true)::uuid
+                )
+                WITH CHECK (
+                    current_setting('app.current_tenant', true) ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+                    AND tenant_id = current_setting('app.current_tenant', true)::uuid
+                )
+            """))
+            connection.execute(text('''
+                CREATE POLICY tenant_isolation_policy ON "user"
+                FOR ALL
+                USING (
+                    current_setting('app.current_tenant', true) ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+                    AND tenant_id = current_setting('app.current_tenant', true)::uuid
+                )
+                WITH CHECK (
+                    current_setting('app.current_tenant', true) ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+                    AND tenant_id = current_setting('app.current_tenant', true)::uuid
+                )
+            '''))
+            connection.execute(text("""
+                CREATE POLICY admin_bypass_policy ON items
+                FOR ALL
+                USING (current_setting('app.current_tenant', true) = 'admin_bypass')
+                WITH CHECK (current_setting('app.current_tenant', true) = 'admin_bypass')
+            """))
+            connection.execute(text('''
+                CREATE POLICY admin_bypass_policy ON "user"
+                FOR ALL
+                USING (current_setting('app.current_tenant', true) = 'admin_bypass')
+                WITH CHECK (current_setting('app.current_tenant', true) = 'admin_bypass')
+            '''))
+
+        await conn.run_sync(enable_rls)
 
     yield engine
 
@@ -36,8 +83,10 @@ async def engine():
 @pytest_asyncio.fixture(scope="function")
 async def db_session(engine):
     """Create a fresh database session for each test."""
+    from app.core.tenant import TenantSession
+
     async_session_maker = async_sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
+        bind=engine, class_=TenantSession, expire_on_commit=False
     )
 
     async with async_session_maker() as session:
@@ -125,6 +174,17 @@ async def authenticated_user(test_client, db_session, mock_auth):
     """
     from uuid import uuid4
     import time
+    from app.models import Tenant
+
+    # Create a test tenant first
+    tenant_id = uuid4()
+    tenant = Tenant(
+        id=tenant_id,
+        name="Test Tenant",
+        slug="test-tenant",
+    )
+    db_session.add(tenant)
+    await db_session.commit()
 
     # Create a test user directly in the database
     user_id = uuid4()
@@ -135,6 +195,7 @@ async def authenticated_user(test_client, db_session, mock_auth):
         is_superuser=False,
         is_verified=True,
         hashed_password="test",
+        tenant_id=tenant_id,
     )
 
     db_session.add(user)
@@ -169,6 +230,17 @@ async def admin_user(test_client, db_session, mock_auth):
     """
     from uuid import uuid4
     import time
+    from app.models import Tenant
+
+    # Create a test tenant first
+    tenant_id = uuid4()
+    tenant = Tenant(
+        id=tenant_id,
+        name="Admin Tenant",
+        slug="admin-tenant",
+    )
+    db_session.add(tenant)
+    await db_session.commit()
 
     # Create an admin user directly in the database
     user_id = uuid4()
@@ -179,6 +251,7 @@ async def admin_user(test_client, db_session, mock_auth):
         is_superuser=True,
         is_verified=True,
         hashed_password="admin",
+        tenant_id=tenant_id,
     )
 
     db_session.add(user)

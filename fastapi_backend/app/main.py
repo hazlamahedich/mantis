@@ -9,6 +9,7 @@ from app.config import settings
 from app.core.logging import configure_logging
 from app.core.metrics import setup_metrics
 from app.core.middleware import RequestLoggingMiddleware
+from app.core.tenant_middleware import TenantMiddleware
 from app.routes.auth import router as auth_router
 from app.routes.health import router as health_router
 from app.routes.items import router as items_router
@@ -34,7 +35,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Add request logging middleware (must be after CORS)
+# Add tenant middleware (must be after CORS, before request logging)
+# This extracts tenant_id from JWT and sets context for RLS
+app.add_middleware(TenantMiddleware)
+
+# Add request logging middleware (must be after tenant middleware)
 app.add_middleware(RequestLoggingMiddleware)
 
 # Configure OAuth2 for Swagger UI
