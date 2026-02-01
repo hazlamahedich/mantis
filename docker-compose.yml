@@ -4,18 +4,18 @@ services:
       context: fastapi_backend
     environment:
       - OPENAPI_OUTPUT_FILE=./shared-data/openapi.json
-      - DATABASE_URL=postgresql+asyncpg://postgres:password@db:5432/mydatabase
-      - TEST_DATABASE_URL=postgresql+asyncpg://postgres:password@db:5433/testdatabase
-      - REDIS_URL=redis://redis:6379/0
-      - MAIL_SERVER=mailhog
-      - MAIL_PORT=1025
-      - MAIL_STARTTLS=False
-      - MAIL_SSL_TLS=False
-      - USE_CREDENTIALS=False
-      - ACCESS_SECRET_KEY=dev-access-secret-key-change-in-production
-      - RESET_PASSWORD_SECRET_KEY=dev-reset-password-secret-key-change-in-production
-      - VERIFICATION_SECRET_KEY=dev-verification-secret-key-change-in-production
-      - CORS_ORIGINS=["http://localhost:3000","http://frontend:3000"]
+      - DATABASE_URL=${DATABASE_URL}
+      - TEST_DATABASE_URL=${TEST_DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - MAIL_SERVER=${MAIL_SERVER}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_STARTTLS=${MAIL_STARTTLS}
+      - MAIL_SSL_TLS=${MAIL_SSL_TLS}
+      - USE_CREDENTIALS=${USE_CREDENTIALS}
+      - ACCESS_SECRET_KEY=${ACCESS_SECRET_KEY}
+      - RESET_PASSWORD_SECRET_KEY=${RESET_PASSWORD_SECRET_KEY}
+      - VERIFICATION_SECRET_KEY=${VERIFICATION_SECRET_KEY}
+      - CORS_ORIGINS=${CORS_ORIGINS}
     ports:
       - "8000:8000"
     networks:

@@ -23,14 +23,17 @@ async def check_postgres() -> str:
 
 
 async def check_redis() -> str:
-    """Check Redis connectivity."""
+    """Check Redis connectivity using connection pool."""
     try:
-        import redis.asyncio as redis
+        from redis.asyncio import Redis
         
-        client = redis.from_url(settings.REDIS_URL)
-        await client.ping()
-        await client.aclose()
-        return "ok"
+        # Redis client manages its own connection pool internally
+        client = Redis.from_url(settings.REDIS_URL, decode_responses=True)
+        try:
+            await client.ping()
+            return "ok"
+        finally:
+            await client.aclose()
     except Exception as e:
         return f"error: {str(e)[:50]}"
 

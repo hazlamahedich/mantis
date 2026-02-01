@@ -37,7 +37,7 @@ story_location: _bmad-output/stories
 development_status:
   # Epic 0: Foundation & Quality Infrastructure
   epic-0: in-progress
-  0-1-project-skeleton-docker-environment: in-progress
+  0-1-project-skeleton-docker-environment: done
   0-2-test-framework-setup: backlog
   0-3-ci-cd-pipeline-with-quality-gates: backlog
   0-4-observability-health-monitoring: backlog

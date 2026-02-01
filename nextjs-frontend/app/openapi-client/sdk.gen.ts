@@ -52,6 +52,12 @@ import type {
   DeleteItemData,
   DeleteItemResponses,
   DeleteItemErrors,
+  HealthCheckData,
+  HealthCheckResponses,
+  LivenessData,
+  LivenessResponses,
+  ReadinessData,
+  ReadinessResponses,
 } from "./types.gen";
 import { client } from "./client.gen";
 
@@ -413,6 +419,63 @@ export const deleteItem = <ThrowOnError extends boolean = false>(
       },
     ],
     url: "/items/{item_id}",
+    ...options,
+  });
+};
+
+/**
+ * Health Check
+ * Health check endpoint for infrastructure services.
+ *
+ * Returns status of PostgreSQL and Redis connectivity.
+ * Returns 200 if all services are healthy.
+ */
+export const healthCheck = <ThrowOnError extends boolean = false>(
+  options?: Options<HealthCheckData, ThrowOnError>,
+) => {
+  return (options?.client ?? client).get<
+    HealthCheckResponses,
+    unknown,
+    ThrowOnError
+  >({
+    responseType: "json",
+    url: "/health",
+    ...options,
+  });
+};
+
+/**
+ * Liveness
+ * Simple liveness probe for container orchestration.
+ */
+export const liveness = <ThrowOnError extends boolean = false>(
+  options?: Options<LivenessData, ThrowOnError>,
+) => {
+  return (options?.client ?? client).get<
+    LivenessResponses,
+    unknown,
+    ThrowOnError
+  >({
+    responseType: "json",
+    url: "/health/live",
+    ...options,
+  });
+};
+
+/**
+ * Readiness
+ * Readiness probe - only returns 200 if dependencies are ready.
+ */
+export const readiness = <ThrowOnError extends boolean = false>(
+  options?: Options<ReadinessData, ThrowOnError>,
+) => {
+  return (options?.client ?? client).get<
+    ReadinessResponses,
+    unknown,
+    ThrowOnError
+  >({
+    responseType: "json",
+    url: "/health/ready",
     ...options,
   });
 };

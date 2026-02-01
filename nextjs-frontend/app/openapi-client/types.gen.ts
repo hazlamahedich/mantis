@@ -748,6 +748,64 @@ export type DeleteItemResponses = {
   200: unknown;
 };
 
+export type HealthCheckData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/health";
+};
+
+export type HealthCheckResponses = {
+  /**
+   * Response Health-Health Check
+   * Successful Response
+   */
+  200: {
+    [key: string]: unknown;
+  };
+};
+
+export type HealthCheckResponse =
+  HealthCheckResponses[keyof HealthCheckResponses];
+
+export type LivenessData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/health/live";
+};
+
+export type LivenessResponses = {
+  /**
+   * Response Health-Liveness
+   * Successful Response
+   */
+  200: {
+    [key: string]: string;
+  };
+};
+
+export type LivenessResponse = LivenessResponses[keyof LivenessResponses];
+
+export type ReadinessData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/health/ready";
+};
+
+export type ReadinessResponses = {
+  /**
+   * Response Health-Readiness
+   * Successful Response
+   */
+  200: {
+    [key: string]: unknown;
+  };
+};
+
+export type ReadinessResponse = ReadinessResponses[keyof ReadinessResponses];
+
 export type ClientOptions = {
-  baseURL: `${string}://openapi.json` | (string & {});
+  baseURL: `${string}://${string}` | (string & {});
 };

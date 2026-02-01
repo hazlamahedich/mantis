@@ -13,6 +13,10 @@ from app.main import app
 from app.users import get_jwt_strategy
 
 
+# Factory-boy integration - use async factory pattern
+# Note: AsyncUserFactory is available via create_user_factory(session)
+
+
 @pytest_asyncio.fixture(scope="function")
 async def engine():
     """Create a fresh test database engine for each test function."""
@@ -37,6 +41,8 @@ async def db_session(engine):
     )
 
     async with async_session_maker() as session:
+        # Note: Async factory uses session passed directly to create_user_factory(session)
+
         yield session
         await session.rollback()
         await session.close()
@@ -73,23 +79,18 @@ async def test_client(db_session):
 
 @pytest_asyncio.fixture(scope="function")
 async def authenticated_user(test_client, db_session):
-    """Fixture to create and authenticate a test user directly in the database."""
+    """Fixture to create and authenticate a test user using AsyncUserFactory."""
 
-    # Create user data
-    user_data = {
-        "id": uuid.uuid4(),
-        "email": "test@example.com",
-        "hashed_password": PasswordHelper().hash("TestPassword123#"),
-        "is_active": True,
-        "is_superuser": False,
-        "is_verified": True,
-    }
+    # Use AsyncUserFactory for cleaner data generation
+    from tests.factories import create_user_factory
 
-    # Create user directly in database
-    user = User(**user_data)
-    db_session.add(user)
-    await db_session.commit()
-    await db_session.refresh(user)
+    factory = await create_user_factory(db_session)
+    user = await factory.create(
+        email="test@example.com",
+        is_active=True,
+        is_superuser=False,
+        is_verified=True,
+    )
 
     # Generate token using the strategy directly
     strategy = get_jwt_strategy()
