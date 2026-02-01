@@ -7,6 +7,7 @@ This guide covers setting up Codecov and configuring branch protection for the M
 The Codecov token has been added to GitHub Secrets:
 - Secret Name: `CODECOV_TOKEN`
 - Status: ✅ Active
+- Repository visibility: ✅ **PUBLIC** (enables full Codecov features)
 
 Coverage reports will be automatically uploaded to Codecov on every CI run.
 
@@ -21,6 +22,52 @@ If you need to reconfigure Codecov in the future:
 5. Add to GitHub: **Settings → Secrets and variables → Actions → New repository secret**
    - Name: `CODECOV_TOKEN`
    - Value: Paste the token from Codecov
+
+## ✅ Branch Protection Setup (Ready to Configure)
+
+**Repository Status:** PUBLIC - Branch protection rules are now available!
+
+The repository has been made public, which enables:
+- Branch protection rules (even on free GitHub accounts)
+- Full Codecov integration without tokenless upload limitations
+- Better community visibility and collaboration
+
+### Manual Branch Protection Configuration
+
+Since the GitHub API configuration is complex, follow these manual steps to configure branch protection:
+
+1. **Go to repository settings**:
+   - Navigate to https://github.com/hazlamahedich/mantis/settings/branches
+
+2. **Add branch protection rule**:
+   - Click **Add rule**
+   - Branch name pattern: `master`
+
+3. **Configure protection settings**:
+   - ✅ **Require status checks to pass before merging**
+     - Uncheck "Require branches to be up to date before merging" (optional)
+     - Search and add these required checks:
+       - `Lint Backend (Ruff)`
+       - `Lint Frontend`
+       - `Test Backend`
+       - `Test Frontend`
+
+4. **Optional settings**:
+   - ✅ **Require pull request before merging** (recommended)
+   - ✅ **Require conversation resolution** (recommended)
+   - ❌ Do NOT require approvals (unless desired)
+   - ✅ **Include administrators** (recommended to enforce rules on admins too)
+
+5. **Click Create** to apply the rule
+
+### Verification
+
+To verify branch protection is working:
+1. Create a test branch: `git checkout -b test-branch-protection`
+2. Make a small change: `echo "test" >> README.md`
+3. Commit and push: `git add README.md && git commit -m "test" && git push origin test-branch-protection`
+4. Create a pull request on GitHub
+5. Verify all 4 status checks are required before merging
 
 ### Step 4: Update README.md Badges
 
