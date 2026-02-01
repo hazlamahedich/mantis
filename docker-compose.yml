@@ -20,7 +20,7 @@ services:
       - KEYCLOAK_URL=http://localhost:8081
       - KEYCLOAK_REALM=mantis
       - KEYCLOAK_CLIENT_ID=mantis-backend
-      - KEYCLOAK_CLIENT_SECRET=backend-secret-change-in-prod
+      - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
       - LOG_LEVEL=INFO
       - APP_VERSION=0.0.1
       - COMMIT_SHA=dev
@@ -39,7 +39,7 @@ services:
     image: postgres:17
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
       POSTGRES_DB: mydatabase
     ports:
       - "5432:5432"
@@ -57,7 +57,7 @@ services:
     image: postgres:17
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
       POSTGRES_DB: testdatabase
     ports:
       - "5433:5432"
@@ -107,11 +107,16 @@ services:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://db:5432/keycloak
       KC_DB_USERNAME: postgres
-      KC_DB_PASSWORD: password
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-password}
       KC_HOSTNAME_STRICT: "false"
       KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8081
+      KC_HOSTNAME_URL: http://localhost:8081
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
     ports:
       - "8081:8080"
     networks:
@@ -122,7 +127,7 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "kcadm.sh", "config", "credentials", "--server", "http://localhost:8080" ]
+      test: [ "CMD-SHELL", "curl -f http://localhost:8080/health/live || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 5

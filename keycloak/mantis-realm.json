@@ -21,7 +21,7 @@
       "clientId": "mantis-backend",
       "enabled": true,
       "clientAuthenticatorType": "client-secret",
-      "secret": "backend-secret-change-in-prod",
+      "secret": "REPLACED_IN_DEPLOYMENT",
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": true,
@@ -55,11 +55,22 @@
       "directAccessGrantsEnabled": true,
       "implicitFlowEnabled": false,
       "protocol": "openid-connect",
-      "redirectUris": ["http://localhost:3000/*"],
-      "webOrigins": ["http://localhost:3000"],
+      "redirectUris": [
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000"
+      ],
       "attributes": {
         "access.token.lifespan": "3600"
-      }
+      },
+      "defaultClientScopes": [
+        "web-origins",
+        "roles",
+        "profile",
+        "email",
+        "openid"
+      ]
     }
   ],
   "clientScopes": [
@@ -85,6 +96,38 @@
       "protocol": "openid-connect",
       "attributes": {
         "include.in.token.scope": "true"
+      }
+    }
+  ],
+  "identityProviders": [
+    {
+      "alias": "google",
+      "displayName": "Google",
+      "providerId": "google",
+      "enabled": true,
+      "updateProfileFirstLoginMode": "on",
+      "trustEmail": true,
+      "storeToken": false,
+      "addReadTokenRoleOnCreate": false,
+      "authenticateByDefault": false,
+      "linkOnly": false,
+      "firstBrokerLoginFlowAlias": "first broker login",
+      "config": {
+        "useJwksUrl": "true",
+        "jwtSigningAlg": "RS256",
+        "clientId": "REPLACED_IN_DEPLOYMENT",
+        "clientSecret": "REPLACED_IN_DEPLOYMENT",
+        "hostedDomain": "",
+        "userIp": "false",
+        "offlineAccess": "false",
+        "syncMode": "IMPORT",
+        "hideOnLoginPage": "false",
+        "loginHint": "",
+        "acceptsPromptNoneForwardFromClient": "false",
+        "defaultScope": "email profile",
+        "disableUserInfo": "false",
+        "prompt": "",
+        "maxAge": ""
       }
     }
   ]

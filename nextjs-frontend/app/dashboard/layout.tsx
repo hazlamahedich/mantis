@@ -9,14 +9,7 @@ import {
   BreadcrumbList,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { logout } from "@/components/actions/logout-action";
+import { UserMenu } from "@/components/auth/UserMenu";
 
 export default function DashboardLayout({
   children,
@@ -77,33 +70,7 @@ export default function DashboardLayout({
             </BreadcrumbList>
           </Breadcrumb>
           <div className="relative">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-300 hover:bg-gray-400">
-                  <Avatar>
-                    <AvatarFallback>U</AvatarFallback>
-                  </Avatar>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" side="bottom">
-                <DropdownMenuItem>
-                  <Link
-                    href="/support"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    Support
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <button
-                    onClick={logout}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    Logout
-                  </button>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <UserMenu />
           </div>
         </header>
         <section className="grid gap-6">{children}</section>

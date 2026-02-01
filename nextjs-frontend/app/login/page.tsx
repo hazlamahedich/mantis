@@ -1,89 +1,50 @@
+/**
+ * Login Page - Redirects to Keycloak for authentication.
+ */
+
 "use client";
 
-import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@/components/providers/AuthProvider";
 
-import { login } from "@/components/actions/login-action";
-import { useActionState } from "react";
-import { SubmitButton } from "@/components/ui/submitButton";
-import { FieldError, FormError } from "@/components/ui/FormError";
+function LoginForm() {
+  const { user, login, isAuthenticated } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push("/dashboard");
+      return;
+    }
+
+    const error = searchParams.get("error");
+    if (error) {
+      console.error("Login error:", error);
+    }
+
+    // Automatically trigger Keycloak login
+    login();
+  }, [isAuthenticated, router, login, searchParams]);
+
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold mb-4">Redirecting to Login</h2>
+        <p className="text-gray-600">Please wait while we redirect you to the authentication provider.</p>
+        <div className="mt-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Page() {
-  const [state, dispatch] = useActionState(login, undefined);
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-      <form action={dispatch}>
-        <Card className="w-full max-w-sm rounded-lg shadow-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-semibold text-gray-800 dark:text-white">
-              Login
-            </CardTitle>
-            <CardDescription className="text-sm text-gray-600 dark:text-gray-400">
-              Enter your email below to log in to your account.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-6 p-6">
-            <div className="grid gap-3">
-              <Label
-                htmlFor="username"
-                className="text-gray-700 dark:text-gray-300"
-              >
-                Username
-              </Label>
-              <Input
-                id="username"
-                name="username"
-                type="email"
-                placeholder="m@example.com"
-                required
-                className="border-gray-300 dark:border-gray-600"
-              />
-              <FieldError state={state} field="username" />
-            </div>
-            <div className="grid gap-3">
-              <Label
-                htmlFor="password"
-                className="text-gray-700 dark:text-gray-300"
-              >
-                Password
-              </Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                required
-                className="border-gray-300 dark:border-gray-600"
-              />
-              <FieldError state={state} field="password" />
-              <Link
-                href="/password-recovery"
-                className="ml-auto inline-block text-sm text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-500"
-              >
-                Forgot your password?
-              </Link>
-            </div>
-            <SubmitButton text="Sign In" />
-            <FormError state={state} />
-            <div className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
-              Don&apos;t have an account?{" "}
-              <Link
-                href="/register"
-                className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-500"
-              >
-                Sign up
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </form>
-    </div>
+    <Suspense fallback={<div>Loading login...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

@@ -1,24 +1,26 @@
 from httpx import AsyncClient, ASGITransport
+import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from fastapi_users.db import SQLAlchemyUserDatabase
+from unittest.mock import AsyncMock, MagicMock, patch
+from typing import Generator
 
 from app.config import settings
 from app.models import User, Base
+from jose import jwt
 
-from app.database import get_user_db, get_async_session
+from app.database import get_async_session
 from app.main import app
-from app.users import get_jwt_strategy
 
 
-# Factory-boy integration - use async factory pattern
-# Note: AsyncUserFactory is available via create_user_factory(session)
+# Test secret for generating mock JWT tokens
+_TEST_JWT_SECRET = "test-secret-for-jwt-tokens"
 
 
 @pytest_asyncio.fixture(scope="function")
 async def engine():
     """Create a fresh test database engine for each test function."""
-    engine = create_async_engine(settings.TEST_DATABASE_URL, echo=True)
+    engine = create_async_engine(settings.TEST_DATABASE_URL, echo=False)
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -39,8 +41,6 @@ async def db_session(engine):
     )
 
     async with async_session_maker() as session:
-        # Note: Async factory uses session passed directly to create_user_factory(session)
-
         yield session
         await session.rollback()
         await session.close()
@@ -50,14 +50,6 @@ async def db_session(engine):
 async def test_client(db_session):
     """Fixture to create a test client that uses the test database session."""
 
-    # FastAPI-Users database override (wraps session with user operation helpers)
-    async def override_get_user_db():
-        session = SQLAlchemyUserDatabase(db_session, User)
-        try:
-            yield session
-        finally:
-            await db_session.close()
-
     # General database override (raw session access)
     async def override_get_async_session():
         try:
@@ -65,8 +57,7 @@ async def test_client(db_session):
         finally:
             await db_session.close()
 
-    # Set up test database overrides
-    app.dependency_overrides[get_user_db] = override_get_user_db
+    # Set up test database override
     app.dependency_overrides[get_async_session] = override_get_async_session
 
     async with AsyncClient(
@@ -75,27 +66,141 @@ async def test_client(db_session):
         yield client
 
 
+@pytest.fixture(scope="function")
+def mock_auth():
+    """
+    Mock Keycloak authentication for testing.
+
+    This fixture patches the KeycloakJWTAuth to accept test tokens
+    signed with the test secret.
+    """
+    from app.core import auth as auth_module
+
+    # Store original methods
+    original_decode_token = auth_module.KeycloakJWTAuth.decode_token
+    original_verify_token = auth_module.verify_token
+    original_get_current_user_optional = auth_module.get_current_user_optional
+
+    # Create mock functions
+    async def mock_decode_token(self, token: str):
+        """Mock decode that accepts HS256 test tokens."""
+        try:
+            payload = jwt.decode(
+                token,
+                _TEST_JWT_SECRET,
+                algorithms=["HS256"],
+                audience="mantis-frontend",
+                issuer=f"{settings.KEYCLOAK_INTERNAL_URL}/realms/{settings.KEYCLOAK_REALM}",
+            )
+            return payload
+        except Exception as e:
+            raise
+
+    async def mock_verify_token(token: str):
+        """Mock verify that accepts HS256 test tokens."""
+        payload = jwt.decode(
+            token,
+            _TEST_JWT_SECRET,
+            algorithms=["HS256"],
+            audience="mantis-frontend",
+            issuer=f"{settings.KEYCLOAK_INTERNAL_URL}/realms/{settings.KEYCLOAK_REALM}",
+        )
+        return payload
+
+    # Apply patches
+    with patch.object(
+        auth_module.KeycloakJWTAuth, "decode_token", mock_decode_token
+    ), patch.object(auth_module, "verify_token", mock_verify_token):
+        yield
+        # Patches are automatically undone after context exit
+
+
 @pytest_asyncio.fixture(scope="function")
-async def authenticated_user(test_client, db_session):
-    """Fixture to create and authenticate a test user using AsyncUserFactory."""
+async def authenticated_user(test_client, db_session, mock_auth):
+    """
+    Fixture to create and authenticate a test user.
 
-    # Use AsyncUserFactory for cleaner data generation
-    from tests.factories import create_user_factory
+    This fixture creates a user in the database and returns a mock
+    JWT token that can be used for authentication in tests.
+    """
+    from uuid import uuid4
+    import time
 
-    factory = await create_user_factory(db_session)
-    user = await factory.create(
+    # Create a test user directly in the database
+    user_id = uuid4()
+    user = User(
+        id=user_id,
         email="test@example.com",
         is_active=True,
         is_superuser=False,
         is_verified=True,
+        hashed_password="test",
     )
 
-    # Generate token using the strategy directly
-    strategy = get_jwt_strategy()
-    access_token = await strategy.write_token(user)
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
 
-    # Return both the headers and the user data
+    # Create a mock JWT token
+    payload = {
+        "sub": str(user_id),
+        "email": "test@example.com",
+        "email_verified": True,
+        "tenant_id": "test-tenant-123",
+        "iss": f"{settings.KEYCLOAK_INTERNAL_URL}/realms/{settings.KEYCLOAK_REALM}",
+        "aud": "mantis-frontend",
+        "exp": int(time.time()) + 3600,
+        "iat": int(time.time()),
+    }
+
+    mock_token = jwt.encode(payload, _TEST_JWT_SECRET, algorithm="HS256")
+
     return {
-        "headers": {"Authorization": f"Bearer {access_token}"},
+        "headers": {"Authorization": f"Bearer {mock_token}"},
         "user": user,
+        "token": mock_token,
+    }
+
+
+@pytest_asyncio.fixture(scope="function")
+async def admin_user(test_client, db_session, mock_auth):
+    """
+    Fixture to create an admin user for testing.
+    """
+    from uuid import uuid4
+    import time
+
+    # Create an admin user directly in the database
+    user_id = uuid4()
+    user = User(
+        id=user_id,
+        email="admin@example.com",
+        is_active=True,
+        is_superuser=True,
+        is_verified=True,
+        hashed_password="admin",
+    )
+
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+
+    # Create a mock JWT token
+    payload = {
+        "sub": str(user_id),
+        "email": "admin@example.com",
+        "email_verified": True,
+        "tenant_id": "test-tenant-123",
+        "iss": f"{settings.KEYCLOAK_INTERNAL_URL}/realms/{settings.KEYCLOAK_REALM}",
+        "aud": "mantis-frontend",
+        "exp": int(time.time()) + 3600,
+        "iat": int(time.time()),
+    }
+
+    mock_token = jwt.encode(payload, _TEST_JWT_SECRET, algorithm="HS256")
+
+    return {
+        "headers": {"Authorization": f"Bearer {mock_token}"},
+        "user": user,
+        "token": mock_token,
     }

@@ -1,15 +1,18 @@
+from typing import Any
+
 from fastapi import FastAPI
 from fastapi_pagination import add_pagination
-from .schemas import UserCreate, UserRead, UserUpdate
-from .users import auth_backend, fastapi_users, AUTH_URL_PATH
 from fastapi.middleware.cors import CORSMiddleware
-from .utils import simple_generate_unique_route_id
-from app.routes.items import router as items_router
-from app.routes.health import router as health_router
+from fastapi.security import OAuth2AuthorizationCodeBearer
+
 from app.config import settings
-from app.core.metrics import setup_metrics
 from app.core.logging import configure_logging
+from app.core.metrics import setup_metrics
 from app.core.middleware import RequestLoggingMiddleware
+from app.routes.auth import router as auth_router
+from app.routes.health import router as health_router
+from app.routes.items import router as items_router
+from app.utils import simple_generate_unique_route_id
 
 # Configure structured logging (must happen before importing logging-using modules)
 configure_logging()
@@ -34,32 +37,66 @@ app.add_middleware(
 # Add request logging middleware (must be after CORS)
 app.add_middleware(RequestLoggingMiddleware)
 
-# Include authentication and user management routes
-app.include_router(
-    fastapi_users.get_auth_router(auth_backend),
-    prefix=f"/{AUTH_URL_PATH}/jwt",
-    tags=["auth"],
+# Configure OAuth2 for Swagger UI
+# This allows developers to test protected routes in /docs
+oauth2_scheme = OAuth2AuthorizationCodeBearer(
+    authorizationUrl=f"{settings.KEYCLOAK_URL}/realms/{settings.KEYCLOAK_REALM}/protocol/openid-connect/auth",
+    tokenUrl=f"{settings.KEYCLOAK_URL}/realms/{settings.KEYCLOAK_REALM}/protocol/openid-connect/token",
+    scopes={
+        "openid": "OpenID Connect scope",
+        "profile": "User profile information",
+        "email": "User email address",
+    },
 )
-app.include_router(
-    fastapi_users.get_register_router(UserRead, UserCreate),
-    prefix=f"/{AUTH_URL_PATH}",
-    tags=["auth"],
-)
-app.include_router(
-    fastapi_users.get_reset_password_router(),
-    prefix=f"/{AUTH_URL_PATH}",
-    tags=["auth"],
-)
-app.include_router(
-    fastapi_users.get_verify_router(UserRead),
-    prefix=f"/{AUTH_URL_PATH}",
-    tags=["auth"],
-)
-app.include_router(
-    fastapi_users.get_users_router(UserRead, UserUpdate),
-    prefix="/users",
-    tags=["users"],
-)
+
+
+def get_swagger_config() -> dict[str, Any]:
+    """Configure OpenAPI/Swagger with OAuth2 for Keycloak."""
+    if app.openapi_schema:
+        return app.openapi_schema
+
+    from fastapi.openapi.utils import get_openapi
+
+    openapi_schema = get_openapi(
+        title="Mantis Bot API",
+        version=settings.APP_VERSION,
+        description="Multi-tenant AI chatbot platform API",
+        routes=app.routes,
+    )
+
+    # Add security schemes and servers
+    openapi_schema["servers"] = [
+        {"url": "http://localhost:8000", "description": "Local development"}
+    ]
+    openapi_schema["components"]["securitySchemes"] = {
+        "OAuth2AuthorizationCodeBearer": {
+            "type": "oauth2",
+            "flows": {
+                "authorizationCode": {
+                    "authorizationUrl": f"{settings.KEYCLOAK_URL}/realms/{settings.KEYCLOAK_REALM}/protocol/openid-connect/auth",
+                    "tokenUrl": f"{settings.KEYCLOAK_URL}/realms/{settings.KEYCLOAK_REALM}/protocol/openid-connect/token",
+                    "scopes": {
+                        "openid": "OpenID Connect scope",
+                        "profile": "User profile information",
+                        "email": "User email address",
+                    },
+                }
+            },
+        }
+    }
+    openapi_schema["security"] = [
+        {"OAuth2AuthorizationCodeBearer": ["openid", "profile", "email"]}
+    ]
+
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+
+# Set custom OpenAPI schema for Swagger UI
+app.openapi = get_swagger_config
+
+# Include authentication routes (Keycloak-based)
+app.include_router(auth_router)
 
 # Include items routes
 app.include_router(items_router, prefix="/items")

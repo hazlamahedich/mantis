@@ -8,10 +8,10 @@ import { itemSchema } from "@/lib/definitions";
 
 export async function fetchItems(page: number = 1, size: number = 10) {
   const cookieStore = await cookies();
-  const token = cookieStore.get("accessToken")?.value;
+  const token = cookieStore.get("auth_access_token")?.value;
 
   if (!token) {
-    return { message: "No access token found" };
+    return { items: [], total: 0, page: 1, size: 10 };
   }
 
   const { data, error } = await readItem({
@@ -25,7 +25,8 @@ export async function fetchItems(page: number = 1, size: number = 10) {
   });
 
   if (error) {
-    return { message: error };
+    console.error("fetchItems error:", error);
+    return { items: [], total: 0, page: 1, size: 10 };
   }
 
   return data;
@@ -33,7 +34,7 @@ export async function fetchItems(page: number = 1, size: number = 10) {
 
 export async function removeItem(id: string) {
   const cookieStore = await cookies();
-  const token = cookieStore.get("accessToken")?.value;
+  const token = cookieStore.get("auth_access_token")?.value;
 
   if (!token) {
     return { message: "No access token found" };
@@ -54,9 +55,9 @@ export async function removeItem(id: string) {
   revalidatePath("/dashboard");
 }
 
-export async function addItem(prevState: {}, formData: FormData) {
+export async function addItem(prevState: any, formData: FormData) {
   const cookieStore = await cookies();
-  const token = cookieStore.get("accessToken")?.value;
+  const token = cookieStore.get("auth_access_token")?.value;
 
   if (!token) {
     return { message: "No access token found" };
@@ -74,7 +75,7 @@ export async function addItem(prevState: {}, formData: FormData) {
 
   const { name, description, quantity } = validatedFields.data;
 
-  const input = {
+  const { error } = await createItem({
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -83,10 +84,12 @@ export async function addItem(prevState: {}, formData: FormData) {
       description,
       quantity,
     },
-  };
-  const { error } = await createItem(input);
+  });
+
   if (error) {
-    return { message: `${error.detail}` };
+    return { message: "Failed to create item" };
   }
+
+  revalidatePath("/dashboard");
   redirect(`/dashboard`);
 }
