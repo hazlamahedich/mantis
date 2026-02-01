@@ -130,3 +130,94 @@ jobs:
           flags: frontend
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  test-e2e:
+    name: Test E2E (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.7.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: './nextjs-frontend/pnpm-lock.yaml'
+
+      - name: Install Dependencies
+        run: |
+          pip install uv
+          cd fastapi_backend && uv sync --group dev
+          cd ../nextjs-frontend && pnpm install
+
+      - name: Prepare Keycloak Config
+        run: |
+          # Replace placeholders in realm file for CI environment
+          sed -i 's/REPLACED_IN_DEPLOYMENT/test-secret/g' keycloak/mantis-realm.json
+
+      - name: Start Infrastructure
+        run: |
+          docker compose up -d db redis keycloak
+        env:
+          POSTGRES_PASSWORD: password
+          KEYCLOAK_CLIENT_SECRET: test-secret
+          GOOGLE_OAUTH_CLIENT_ID: dummy-google-id
+          GOOGLE_OAUTH_CLIENT_SECRET: dummy-google-secret
+
+      - name: Wait for Keycloak
+        run: |
+          timeout 60s bash -c 'until curl -f http://localhost:8081/health/live; do sleep 5; done'
+          echo "Keycloak is up"
+
+      - name: Start Backend
+        working-directory: ./fastapi_backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/mydatabase
+          REDIS_URL: redis://localhost:6379/0
+          KEYCLOAK_URL: http://localhost:8081
+          KEYCLOAK_INTERNAL_URL: http://localhost:8081
+          KEYCLOAK_REALM: mantis
+          KEYCLOAK_CLIENT_ID: mantis-backend
+          KEYCLOAK_CLIENT_SECRET: test-secret
+          ACCESS_SECRET_KEY: test-secret
+          REFRESH_SECRET_KEY: test-secret
+          RESET_PASSWORD_SECRET_KEY: test-secret
+          VERIFICATION_SECRET_KEY: test-secret
+          CORS_ORIGINS: http://localhost:3000
+          LOG_LEVEL: INFO
+        run: |
+          uv run alembic upgrade head
+          uv run uvicorn app.main:app --port 8000 &
+          timeout 30s bash -c 'until curl -f http://localhost:8000/health; do sleep 2; done'
+          echo "Backend is up"
+
+      - name: Start Frontend
+        working-directory: ./nextjs-frontend
+        env:
+          NODE_ENV: test
+          API_BASE_URL: http://localhost:8000
+          NEXT_PUBLIC_API_URL: http://localhost:8000
+        run: |
+          pnpm build
+          pnpm start --port 3000 &
+          timeout 60s bash -c 'until curl -f http://localhost:3000; do sleep 2; done'
+          echo "Frontend is up"
+
+      - name: Run Playwright Tests
+        working-directory: ./e2e
+        run: |
+          pnpm install
+          pnpm exec playwright install --with-deps
+          pnpm test
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 7
