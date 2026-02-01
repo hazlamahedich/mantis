@@ -72,7 +72,7 @@ jobs:
 
       - name: Run Prettier check
         working-directory: ./nextjs-frontend
-        run: pnpm prettier --check '**/*.{js,jsx,ts,tsx,json,css,html}'
+        run: pnpm format:check
 
       - name: Run TypeScript check
         working-directory: ./nextjs-frontend
