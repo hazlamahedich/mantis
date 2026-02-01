@@ -23,8 +23,10 @@ jobs:
       - run: pip install uv
       - working-directory: ./fastapi_backend
         run: uv sync --group dev
-      - run: uv run ruff check .
-      - run: uv run ruff format --check .
+      - working-directory: ./fastapi_backend
+        run: uv run ruff check .
+      - working-directory: ./fastapi_backend
+        run: uv run ruff format --check .
 
   lint-frontend:
     name: Lint Frontend
@@ -92,7 +94,8 @@ jobs:
       - run: pip install uv
       - working-directory: ./fastapi_backend
         run: uv sync --group dev
-      - run: mkdir -p ./fastapi_backend/reports
+      - working-directory: ./fastapi_backend
+        run: mkdir -p reports
       - working-directory: ./fastapi_backend
         run: uv run pytest --cov --cov-report=xml --junitxml=reports/junit.xml --cov-fail-under=80 || true
       - uses: codecov/codecov-action@v4
