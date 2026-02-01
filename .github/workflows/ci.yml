@@ -96,8 +96,6 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-        volumes:
-          - postgres_test_data:/var/lib/postgresql/data
 
       redis:
         image: redis:8
@@ -108,8 +106,6 @@ jobs:
           --health-retries 5
         ports:
           - 6379:6379
-        volumes:
-          - redis_test_data:/data
 
     env:
       DATABASE_URL: postgresql+asyncpg://postgres:password@localhost:5432/testdatabase
@@ -178,12 +174,6 @@ jobs:
         with:
           files: ./fastapi_backend/reports/junit.xml
           check_name: Backend Test Results
-
-    volumes:
-      postgres_test_data:
-        driver: local
-      redis_test_data:
-        driver: local
 
   # Frontend Testing Job
   test-frontend:
